@@ -4,7 +4,6 @@
     "slug": "pulse-research-prototype",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
     "scheme": "pulseresearch",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -13,7 +12,7 @@
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": null
     },
     "plugins": [
       "expo-router",
