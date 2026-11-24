@@ -23,7 +23,7 @@ export function PulseScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.cameraBox}>
-        <PulseCamera onReading={onReading} />
+        <PulseCamera active={true} onReading={onReading} />
       </View>
       <Text style={styles.bpm}>{bpmText}</Text>
       <Text style={styles.unit}>BPM{reading?.bpm != null ? ` · confidence ${confidencePct}%` : ''}</Text>

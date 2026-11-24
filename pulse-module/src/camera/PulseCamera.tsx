@@ -2,7 +2,9 @@
  * PulseCamera - camera layer for fingertip rPPG (react-native-vision-camera V5).
  *
  * V5 renamed "Frame Processors" to "Frame Outputs": useFrameOutput({ onFrame })
- * plus outputs={[frameOutput]} on <Camera>. Per-frame pixels come from
+ * plus outputs={[frameOutput]} on <Camera>. V5 also moved the torch off the
+ * view: the prop is torchMode (a CameraController setting exposed through
+ * CameraProps). Per-frame pixels come from
  * frame.getPixelBuffer() (zero-copy). Requires:
  *   - react-native-vision-camera (V5)
  *   - react-native-worklets (already in the app's package.json)
@@ -109,7 +111,7 @@ export function PulseCamera({ active, onReading, onProgress }: PulseCameraProps)
       style={StyleSheet.absoluteFill}
       device={device}
       isActive={true}
-      torch="on"
+      torchMode="on"
       outputs={[frameOutput]}
     />
   );
