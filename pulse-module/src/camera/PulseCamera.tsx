@@ -36,7 +36,8 @@ export interface PulseCameraProps {
   onProgress?: (progress: number) => void;
 }
 
-const FS = 30; // expected camera frame rate; PulseDetector default
+export const PULSE_FS = 30; // expected camera frame rate; PulseDetector default
+const FS = PULSE_FS;
 
 export function PulseCamera({ active, onReading, onProgress }: PulseCameraProps) {
   // Back camera: fingertip covers the lens while the torch shines through it.

@@ -14,7 +14,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCameraPermission } from 'react-native-vision-camera';
-import { PulseCamera } from '../../pulse-module/src/camera/PulseCamera';
+import { PulseCamera, PULSE_FS } from '../../pulse-module/src/camera/PulseCamera';
+import { computeHrv } from '../../pulse-module/src/dsp/hrv';
 import type { PulseReading } from '../../pulse-module/src/dsp/PulseDetector';
 
 const pink = '#f04c88';
@@ -45,12 +46,21 @@ export default function ScanScreen() {
 
   const finish = () => {
     const reading = best.current;
-    router.replace({
-      pathname: '/results',
-      params: reading?.bpm != null
-        ? { bpm: String(Math.round(reading.bpm)), confidence: reading.confidence.toFixed(2) }
-        : {},
-    });
+    const params: Record<string, string> = {};
+    if (reading?.bpm != null) {
+      params.bpm = String(Math.round(reading.bpm));
+      params.confidence = reading.confidence.toFixed(2);
+      // HRV from the same filtered window the BPM estimate used. Gated
+      // inside computeHrv; only successful results reach the screen.
+      const hrv = computeHrv(Array.from(reading.waveform), PULSE_FS, reading.snr, reading.bpm);
+      if (hrv.ok) {
+        params.rmssd = String(hrv.result.rmssdMs);
+        params.sdnn = String(hrv.result.sdnnMs);
+        params.hrvQuality = hrv.result.quality;
+        params.hrvBeats = String(hrv.result.beats);
+      }
+    }
+    router.replace({ pathname: '/results', params });
   };
 
   const onReading = useCallback((reading: PulseReading) => {

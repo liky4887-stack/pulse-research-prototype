@@ -14,6 +14,8 @@ export interface ReadingRecord {
   confidence: number;
   /** ISO timestamp of when the reading was saved. */
   at: string;
+  /** RMSSD in ms when the HRV quality gate passed for this scan. */
+  rmssdMs?: number;
 }
 
 const KEY = 'pulse.readings.v1';
@@ -43,7 +45,9 @@ export async function listReadings(): Promise<ReadingRecord[]> {
         typeof r === 'object' && r != null &&
         typeof (r as ReadingRecord).bpm === 'number' &&
         typeof (r as ReadingRecord).confidence === 'number' &&
-        typeof (r as ReadingRecord).at === 'string'
+        typeof (r as ReadingRecord).at === 'string' &&
+        ((r as ReadingRecord).rmssdMs === undefined ||
+          typeof (r as ReadingRecord).rmssdMs === 'number')
     );
   } catch {
     return [];
