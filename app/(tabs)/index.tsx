@@ -1,7 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Bell, ChevronRight, Heart, ShieldCheck, Sparkles } from 'lucide-react-native';
-import { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +8,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const colors = { bg: '#0d0811', card: '#1b0e1d', border: '#38243b', text: '#fff9fc', muted: '#b5a6b6', pink: '#f04c88', green: '#4bd4a2' };
 
 export default function HomeScreen() {
-  useEffect(() => undefined, []);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
