@@ -1,0 +1,91 @@
+/**
+ * Face scan screen (experimental v2): front-camera rPPG via CHROM over a
+ * fixed face ROI. Mirrors the fingertip scan's state flow and finish rules
+ * (confident reading held, or a longer max scan since face signals are
+ * weaker), with an oval guide matching the sampled ROI. The SNR gate - not
+ * the overlay - decides whether a number is trustworthy.
+ */
+import { router } from 'expo-router';
+import { AlertCircle, ChevronLeft, ScanFace, ShieldCheck } from 'lucide-react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCameraPermission } from 'react-native-vision-camera';
+import { FaceCamera } from '../pulse-module/src/camera/FaceCamera';
+import { computeHrv } from '../pulse-module/src/dsp/hrv';
+import type { PulseReading } from '../pulse-module/src/dsp/PulseDetector';
+
+const pink = '#f04c88';
+type ScanState = 'requesting' | 'ready' | 'scanning' | 'denied' | 'unsupported';
+
+// Face signals are weaker than fingertip: longer hold and longer max scan.
+const MIN_CONFIDENCE = 0.5;
+const HOLD_MS = 3000;
+const MAX_SCAN_MS = 45000;
+const FACE_FS = 30;
+
+export default function FaceScanScreen() {
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const [scanState, setScanState] = useState<ScanState>(Platform.OS === 'web' ? 'unsupported' : 'requesting');
+  const [progress, setProgress] = useState(0);
+  const [quality, setQuality] = useState<'listening' | 'weak' | 'strong'>('listening');
+  const best = useRef<PulseReading | null>(null);
+  const confidentSince = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (scanState !== 'scanning') return;
+    const started = Date.now();
+    const timer = setInterval(() => {
+      if (Date.now() - started >= MAX_SCAN_MS) finish();
+    }, 500);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanState]);
+
+  const finish = () => {
+    const reading = best.current;
+    const params: Record<string, string> = { mode: 'face' };
+    if (reading?.bpm != null) {
+      params.bpm = String(Math.round(reading.bpm));
+      params.confidence = reading.confidence.toFixed(2);
+      const hrv = computeHrv(Array.from(reading.waveform), FACE_FS, reading.snr, reading.bpm);
+      if (hrv.ok) {
+        params.rmssd = String(hrv.result.rmssdMs);
+        params.sdnn = String(hrv.result.sdnnMs);
+        params.hrvQuality = hrv.result.quality;
+        params.hrvBeats = String(hrv.result.beats);
+      }
+    }
+    router.replace({ pathname: '/results', params });
+  };
+
+  const onReading = useCallback((reading: PulseReading) => {
+    setQuality(reading.bpm == null ? 'listening' : reading.confidence >= 0.5 ? 'strong' : 'weak');
+    if (reading.bpm != null && (best.current == null || reading.confidence > best.current.confidence)) {
+      best.current = reading;
+    }
+    if (reading.bpm != null && reading.confidence >= MIN_CONFIDENCE) {
+      if (confidentSince.current == null) confidentSince.current = Date.now();
+      if (Date.now() - confidentSince.current >= HOLD_MS) finish();
+    } else {
+      confidentSince.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onProgress = useCallback((value: number) => setProgress(Math.round(value * 100)), []);
+  const currentState: ScanState = scanState === 'requesting' && hasPermission ? 'ready' : scanState === 'requesting' && !hasPermission ? 'denied' : scanState;
+  const beginScan = () => { setProgress(0); best.current = null; confidentSince.current = null; setScanState('scanning'); };
+
+  if (currentState === 'unsupported' || currentState === 'denied') {
+    return <SafeAreaView style={styles.safe}><View style={styles.centerState}><View style={styles.errorIcon}><AlertCircle color="#ff9a9a" size={30} /></View><Text style={styles.title}>{currentState === 'unsupported' ? 'Camera preview unavailable' : 'Camera access is off'}</Text><Text style={styles.body}>{currentState === 'unsupported' ? 'This preview needs a physical device or development build with camera support.' : 'Allow camera access in your device settings, then return here to try again.'}</Text><Pressable style={styles.button} onPress={() => router.replace('/')}><Text style={styles.buttonText}>Back to home</Text></Pressable></View></SafeAreaView>;
+  }
+
+  if (currentState === 'requesting') {
+    return <SafeAreaView style={styles.safe}><View style={styles.centerState}><View style={styles.cameraIcon}><ScanFace color={pink} size={30} /></View><Text style={styles.title}>Camera permission</Text><Text style={styles.body}>We need your front camera to estimate your pulse from your face, on-device only. Experimental mode.</Text><Pressable accessibilityRole="button" accessibilityLabel="Allow camera access" style={styles.button} onPress={() => requestPermission()}><Text style={styles.buttonText}>Allow camera access</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Cancel" onPress={() => router.replace('/')}><Text style={styles.cancelText}>Cancel</Text></Pressable></View></SafeAreaView>;
+  }
+
+  return <SafeAreaView style={styles.safe} edges={['top']}><View style={styles.screen}><View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel="Back to home" onPress={() => router.replace('/')} style={styles.back}><ChevronLeft color="#fff" size={22} /></Pressable><Text style={styles.headerTitle}>Face scan (experimental)</Text><View style={styles.help} /></View><View style={styles.preview}>{currentState === 'scanning' ? <FaceCamera active={true} onReading={onReading} onProgress={onProgress} /> : null}<View style={styles.overlay}><View style={styles.faceGuide} /><Text style={styles.guideText}>{currentState === 'scanning' ? 'Hold still - measuring' : 'Center your face in the oval, steady light on your skin'}</Text></View><View style={styles.previewShade} /></View><View style={styles.instructions}><View style={styles.instructionRow}><ShieldCheck color="#7fe0bd" size={18} /><Text style={styles.instructionText}>Face the camera at arm's length, no torch needed; keep your face still inside the oval</Text></View>{currentState === 'scanning' ? <View style={styles.qualityRow}><View style={[styles.qualityDot, quality === 'strong' ? styles.qualityStrong : quality === 'weak' ? styles.qualityWeak : styles.qualityListening]} /><Text style={styles.qualityText}>{quality === 'strong' ? 'Signal: strong' : quality === 'weak' ? 'Signal: weak - hold still and steady the light' : 'Listening for pulse signal'}</Text></View> : null}<View style={styles.progressTrack}><View style={[styles.progressFill, { width: progress + '%' }]} /></View><View style={styles.progressLabels}><Text style={styles.progressText}>{currentState === 'scanning' ? 'Calibrating signal' : 'Ready to measure'}</Text><Text style={styles.progressText}>{progress}%</Text></View>{currentState === 'ready' ? <Pressable accessibilityRole="button" accessibilityLabel="Begin face measurement" style={styles.button} onPress={beginScan}><Text style={styles.buttonText}>Begin face scan</Text></Pressable> : <Pressable accessibilityRole="button" accessibilityLabel="Cancel measurement" style={styles.cancelButton} onPress={() => router.replace('/')}><Text style={styles.cancelButtonText}>Cancel</Text></Pressable>}<Text style={styles.footnote}>Experimental: fixed guide oval, not a face detector. The quality gate refuses weak signals. No frames are uploaded or saved. Not a medical device.</Text></View></View></SafeAreaView>;
+}
+
+const styles = StyleSheet.create({ safe: { flex: 1, backgroundColor: '#0d0811' }, screen: { flex: 1 }, header: { height: 62, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18 }, back: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#201326', alignItems: 'center', justifyContent: 'center' }, headerTitle: { color: '#fff9fc', fontSize: 17, fontWeight: '700' }, help: { padding: 8, width: 37 }, preview: { height: '57%', marginHorizontal: 18, borderRadius: 28, overflow: 'hidden', backgroundColor: '#221426' }, previewShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(6,2,10,0.18)' }, overlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', zIndex: 2 }, faceGuide: { height: 230, width: 185, borderRadius: 92, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.45)', borderStyle: 'dashed' }, guideText: { color: '#fff', fontSize: 13, fontWeight: '600', marginTop: 20, textAlign: 'center', maxWidth: 250 }, instructions: { padding: 22 }, instructionRow: { flexDirection: 'row', gap: 8, alignItems: 'center' }, instructionText: { color: '#b9aabb', fontSize: 13, flex: 1 }, qualityRow: { flexDirection: 'row', gap: 8, alignItems: 'center', marginTop: 20 }, qualityDot: { width: 9, height: 9, borderRadius: 5 }, qualityStrong: { backgroundColor: '#7fe0bd' }, qualityWeak: { backgroundColor: '#f0b44c' }, qualityListening: { backgroundColor: '#8f8294' }, qualityText: { color: '#b9aabb', fontSize: 12, fontWeight: '600' }, progressTrack: { height: 6, borderRadius: 3, backgroundColor: '#302131', marginTop: 24, overflow: 'hidden' }, progressFill: { height: '100%', backgroundColor: pink, borderRadius: 3 }, progressLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 9 }, progressText: { color: '#a392a5', fontSize: 11 }, button: { height: 53, backgroundColor: pink, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginTop: 22 }, buttonText: { color: '#fff', fontSize: 15, fontWeight: '700' }, cancelButton: { height: 50, alignItems: 'center', justifyContent: 'center', marginTop: 10 }, cancelButtonText: { color: '#a494a5', fontSize: 14, fontWeight: '600' }, footnote: { color: '#6d5e70', textAlign: 'center', fontSize: 10, lineHeight: 15, marginTop: 15 }, centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }, cameraIcon: { height: 70, width: 70, borderRadius: 23, backgroundColor: '#34172e', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }, errorIcon: { height: 70, width: 70, borderRadius: 23, backgroundColor: '#3a1d29', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }, title: { color: '#fff9fc', fontSize: 26, fontWeight: '700', textAlign: 'center' }, body: { color: '#a99aaa', fontSize: 14, lineHeight: 21, textAlign: 'center', marginTop: 12, maxWidth: 310 }, cancelText: { color: '#a494a5', fontSize: 14, fontWeight: '600', marginTop: 16 } });

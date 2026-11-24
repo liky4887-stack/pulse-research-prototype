@@ -46,3 +46,17 @@ Same participants, phones, lighting, and reference devices against competitor
 products; per-metric error, uncertainty, subgroup performance, scan failure
 rates, and privacy practices published. A polished UI or a single demo
 percentage is not evidence.
+
+## Face mode v2 (experimental)
+
+The face scan (CHROM over a fixed guide oval) needs its own validation before
+any accuracy statement, separate from the fingertip protocol above:
+
+1. Same reference devices and conditions, but run BOTH modes back to back.
+2. Record failure (no-reading) rates separately; face mode is expected to
+   fail more often in dim or uneven light - that is the gate working.
+3. Verify the fixed oval against real face positions across at least 3 face
+   shapes/sizes; if misalignment drives failures, replace `fixedFaceRoi()`
+   with a face-detector plugin before any further work.
+4. Do not extend face-mode claims beyond heart rate (+ gated HRV) regardless
+   of results.
