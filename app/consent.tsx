@@ -1,5 +1,11 @@
+/**
+ * Consent screen - what the measurement is, what it is not, and what happens
+ * to data. Updated for the fingertip flow and the blueprint's honesty rules:
+ * optical pulse is not an ECG, and saving readings is a separate explicit
+ * choice made later, per reading, on the results screen.
+ */
 import { router } from 'expo-router';
-import { Camera, ChevronLeft, LockKeyhole, X } from 'lucide-react-native';
+import { ChevronLeft, Fingerprint, LockKeyhole, X } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,20 +15,20 @@ export default function ConsentScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.content}>
-        <View style={styles.topbar}><Pressable onPress={() => router.back()} style={styles.back}><ChevronLeft color="#fff" size={22} /></Pressable><Pressable onPress={() => router.replace('/')}><X color="#9d8e9e" size={22} /></Pressable></View>
-        <View style={styles.icon}><Camera color={pink} size={32} /></View>
+        <View style={styles.topbar}><Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}><ChevronLeft color="#fff" size={22} /></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => router.replace('/')}><X color="#9d8e9e" size={22} /></Pressable></View>
+        <View style={styles.icon}><Fingerprint color={pink} size={32} /></View>
         <Text style={styles.kicker}>BEFORE YOU BEGIN</Text>
-        <Text style={styles.title}>A private, short{`\n`}camera capture</Text>
-        <Text style={styles.body}>The next step opens your front camera so the future native signal processor can study subtle changes in facial skin color.</Text>
+        <Text style={styles.title}>A short, private{`\n`}fingertip reading</Text>
+        <Text style={styles.body}>You will cover the rear camera and flash with your fingertip for up to 30 seconds. The flash stays on so subtle color changes in your finger can be measured.</Text>
         <View style={styles.list}>
-          <ConsentItem title="Processed on this device" text="Frames stay on your phone and are not sent to a server or AI service." />
-          <ConsentItem title="Nothing is saved" text="The prototype does not upload or store video captures." />
-          <ConsentItem title="Research only" text="This is not a medical device and will not show vital-sign readings." />
+          <ConsentItem title="Processed on this device" text="Frames never leave your phone and no video is recorded or uploaded." />
+          <ConsentItem title="An optical pulse, not an ECG" text="This estimates pulse rate from reflected light. It cannot detect heart rhythm problems, and it is not a medical device." />
+          <ConsentItem title="Saving is your choice" text="Each result can be kept in a private on-device log, only if you tap save. Nothing is stored otherwise." />
         </View>
         <View style={styles.spacer} />
         <View style={styles.notice}><LockKeyhole color="#7fe0bd" size={17} /><Text style={styles.noticeText}>Camera access is requested only after you choose to continue.</Text></View>
-        <Pressable style={styles.button} onPress={() => router.replace('/scan')}><Text style={styles.buttonText}>I understand and consent</Text></Pressable>
-        <Pressable style={styles.cancel} onPress={() => router.replace('/')}><Text style={styles.cancelText}>Cancel</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="I understand and consent" style={styles.button} onPress={() => router.replace('/scan')}><Text style={styles.buttonText}>I understand and consent</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Cancel" style={styles.cancel} onPress={() => router.replace('/')}><Text style={styles.cancelText}>Cancel</Text></Pressable>
       </View>
     </SafeAreaView>
   );

@@ -62,3 +62,15 @@ Notes:
   matches the app's own results-page roadmap text.
 - DSP quality bar: tests cover FFT correctness, band edges, 48-180 bpm sweep
   within +/-3 bpm under noise + lighting drift, and no false lock on noise.
+
+## Research references (from the project blueprint)
+
+- rPPG-Toolbox (github.com/ubicomplab/rPPG-Toolbox) - benchmarking framework;
+  experiments only, not a ready-made app.
+- pyVHR (github.com/phuselab/pyVHR) - Python rPPG methods and dataset
+  evaluation; research-side tool.
+- open-rppg (github.com/kegangwangccnu/open-rppg) - Python/JAX rPPG
+  inference/evaluation; check maintenance, license, and device fit first.
+These are starting references, not proof of clinical accuracy. Review each
+repo's license and run its tests before adopting any code. See
+pulse-module/docs/VALIDATION.md for the comparison protocol.
