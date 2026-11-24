@@ -74,3 +74,13 @@ Notes:
 These are starting references, not proof of clinical accuracy. Review each
 repo's license and run its tests before adopting any code. See
 pulse-module/docs/VALIDATION.md for the comparison protocol.
+
+## Face mode v2 (experimental)
+
+`src/dsp/chrom.ts` implements CHROM rPPG extraction (de Haan & Jeanne 2013);
+`src/dsp/FacePulseAnalyzer.ts` streams it into the shared detector pipeline;
+`src/camera/FaceCamera.tsx` reads front-camera ROI means. The ROI is a fixed
+guide oval (`fixedFaceRoi()`), not a face detector: mispositioned faces are
+refused by the SNR gate instead of guessed. Green-channel fallback is in
+`extractGreen()`. Device validation is pending - see docs/VALIDATION.md.
+Tests: `test/chrom.test.cjs`, `test/face.test.cjs`.
