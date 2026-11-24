@@ -16,9 +16,15 @@
     },
     "plugins": [
       "expo-router",
-      "expo-camera",
       "expo-splash-screen",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "Pulse Research Prototype needs camera access to measure your pulse locally, on-device only.",
+          "enableMicrophonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

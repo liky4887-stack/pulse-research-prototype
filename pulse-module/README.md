@@ -21,29 +21,30 @@ via Frame.getPixelBuffer()).
 - test/dsp.test.cjs - 17 Node tests (FFT vs naive DFT, band edges, BPM sweep
   48-180 bpm +/-3, noise rejection, warm-up gating)
 
-## Integrating into the repo
+## Status on this branch (feat/pulse-module-v1)
 
-1. Install the camera (dev build required - Expo Go cannot run frame outputs):
+The branch already wires the module into the app: app/(tabs)/scan.tsx and
+app/results.tsx are replaced with the real measurement flow (the integration/
+folder keeps pristine copies for reference), package.json swaps expo-camera
+for react-native-vision-camera ^5.2.4 + react-native-vision-camera-worklets
+^5.2.4 + react-native-nitro-modules ^0.37.2 + react-native-nitro-image
+^0.15.2, and app.json carries the vision-camera config plugin with a
+camera-only permission string (microphone disabled).
 
-   npx expo install react-native-vision-camera react-native-vision-camera-worklets
+## Build and run (dev build required - Expo Go cannot run frame outputs)
 
-   react-native-worklets 0.13.0 is already in the app's package.json (V5
-   frame outputs need it). If `react-native-vision-camera-worklets` does not
-   resolve, check the V5 install docs; the frame-output guide names it as the
-   worklet bridge. Do NOT use expo-camera for measurement - SDK 58 has no
-   per-frame pixel access (verified against the live docs).
+   npm install
+   npx expo prebuild
+   npx expo run:android   # or run:ios
 
-2. app.json: add the vision-camera config plugin (camera + mic permission
-   strings), then `npx expo prebuild` and `npx expo run:android` (or run:ios).
+Notes:
+- react-native-worklets 0.13.0 is already present and satisfies the peer
+  range. babel-preset-expo auto-registers the worklets plugin; if the frame
+  output never fires, upgrade react-native-worklets to ^0.14.0 first.
+- If prebuild rejects the vision-camera plugin options, check the V5 docs'
+  Expo section and adjust the plugin entry in app.json.
+- Run the DSP tests before integrating changes: npx tsc -p pulse-module/tsconfig.json && node pulse-module/test/dsp.test.cjs
 
-3. Copy src/ into the repo as lib/pulse/src/ (any path works; fix the two
-   relative imports at the top of integration/scan.tsx).
-
-4. Replace app/(tabs)/scan.tsx with integration/scan.tsx and app/results.tsx
-   with integration/results.tsx. Both keep the app's tokens
-   (#0d0811/#1b0e1d/#f04c88/#7fe0bd) and its "no medical claims" framing.
-
-5. Run tests before integrating: `npx tsc -p tsconfig.json && node test/dsp.test.cjs`.
 
 ## Verify on device (the two open items)
 
