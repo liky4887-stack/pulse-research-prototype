@@ -18,8 +18,22 @@ via Frame.getPixelBuffer()).
   primary path
 - integration/scan.tsx - drop-in replacement for app/(tabs)/scan.tsx
 - integration/results.tsx - drop-in replacement for app/results.tsx
+- src/sensors/stillness.ts - pure-TS motion gate (per-axis EMA baseline +
+  deviation norm, book-derived: Android SensorManager ch.116 threshold
+  idea, iOS Core Motion availability-first rule). Movement pauses the
+  confidence hold on both scan screens and shows its own UI state; it
+  never adjusts a reading. Unavailable sensors never block a scan.
+- src/sensors/useStillness.ts - expo-sensors Accelerometer bridge
+  (availability check, 20 Hz sampling, 2 Hz state poll; web-safe)
 - test/dsp.test.cjs - 17 Node tests (FFT vs naive DFT, band edges, BPM sweep
   48-180 bpm +/-3, noise rejection, warm-up gating)
+- test/stillness.test.cjs - 9 Node tests (steady/shake/settle/tilt/threshold)
+- test/property.test.cjs - fast-check property tests (skills/haskell
+  QuickCheck idea): random rate 45-190 bpm x noise x phase x drift;
+  invariant: estimate within +/-4 bpm OR honest refusal; refusal rate
+  must stay under 20%. Fixed seed, replayable. Run:
+  npx tsc -p pulse-module/tsconfig.json && npx tsc -p pulse-module/tsconfig.sensors.json
+  then node each test/*.test.cjs (property test needs fast-check installed)
 
 ## Status on this branch (feat/pulse-module-v1)
 

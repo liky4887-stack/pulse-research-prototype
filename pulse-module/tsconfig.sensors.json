@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "CommonJS",
+    "strict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "rootDir": "src/sensors",
+    "outDir": "build",
+    "declaration": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/sensors/stillness.ts"]
+}
